@@ -23,7 +23,7 @@ async def upload_data(
             status_code=status.HTTP_400_BAD_REQUEST, content={"message": result_message}
         )
 
-    file_path = data_controller.generate_unique_filename(file, project_id)
+    file_path, file_id = data_controller.generate_unique_filePath(file, project_id)
 
     try:
         async with aiofiles.open(file_path, "wb") as out_file:
@@ -40,6 +40,6 @@ async def upload_data(
         status_code=status.HTTP_200_OK,
         content={
             "message": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
-            "file_path": file_path,
+            "file_id": file_id,
         },
     )
