@@ -1,10 +1,10 @@
-from fastapi import FastAPI, APIRouter, Depends, UploadFile, status
+from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi.responses import JSONResponse
 from src.helpers.config import get_settings, Settings
-from src.controllers import DataController, ProjectController
+from src.controllers import DataController, ProcessController
 from src.models import ResponseSignal
+from .schemas.data import ProcessRequest
 import aiofiles
-
 import logging
 
 logger = logging.getLogger("uvicorn.error")
@@ -41,5 +41,37 @@ async def upload_data(
         content={
             "message": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
             "file_id": file_id,
+        },
+    )
+
+
+@data_router.post("/process/{project_id}")
+async def process_data(project_id: str, process_request: ProcessRequest):
+
+    file_id = process_request.file_id
+    chunk_size = process_request.chunk_size
+    overlap_size = process_request.overlap_size
+
+    process_controller = ProcessController(project_id)
+
+    file_content = process_controller.get_file_content(file_id)
+
+    file_chunks = process_controller.process_file_content(
+        file_content, file_id, chunk_size, overlap_size
+    )
+
+    if file_chunks is None or len(file_chunks) == 0:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": ResponseSignal.PROCESSING_FAILED.value},
+        )
+
+    return file_chunks
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "message": ResponseSignal.PROCESSING_SUCCESS.value,
+            "num_chunks": len(file_chunks),
         },
     )
