@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, UploadFile, status
+from fastapi import APIRouter, Depends, UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from src.helpers.config import get_settings, Settings
 from src.controllers import DataController, ProcessController
 from src.models import ResponseSignal
+from src.models.ProjectModel import ProjectModel
+from src.models.ChunkModel import ChunkModel
+from src.models.db_schemas import DataChunk
 from .schemas.data import ProcessRequest
 import aiofiles
 import logging
@@ -14,8 +17,15 @@ data_router = APIRouter(prefix="/api/v1/data", tags=["api_v1", "data"])
 
 @data_router.post("/upload/{project_id}")
 async def upload_data(
-    project_id: str, file: UploadFile, app_settings: Settings = Depends(get_settings)
+    request: Request,
+    project_id: str,
+    file: UploadFile,
+    app_settings: Settings = Depends(get_settings),
 ):
+    project_model = ProjectModel(request.app.db_client)
+
+    project = await project_model.get_project_or_create_one(project_id)
+
     data_controller = DataController()
     is_valid, result_message = data_controller.validate_uploaded_file(file)
     if not is_valid:
@@ -46,11 +56,18 @@ async def upload_data(
 
 
 @data_router.post("/process/{project_id}")
-async def process_data(project_id: str, process_request: ProcessRequest):
-
+async def process_data(
+    request: Request, project_id: str, process_request: ProcessRequest
+):
     file_id = process_request.file_id
     chunk_size = process_request.chunk_size
     overlap_size = process_request.overlap_size
+    do_reset = process_request.do_reset
+
+    project_model = ProjectModel(request.app.db_client)
+    chunk_model = ChunkModel(request.app.db_client)
+
+    project = await project_model.get_project_or_create_one(project_id)
 
     process_controller = ProcessController(project_id)
 
@@ -66,12 +83,28 @@ async def process_data(project_id: str, process_request: ProcessRequest):
             content={"message": ResponseSignal.PROCESSING_FAILED.value},
         )
 
-    return file_chunks
+    file_chunks_records = [
+        DataChunk(
+            text=chunk.page_content,
+            metadata=chunk.metadata,
+            order=i + 1,
+            project_id=project.id,
+        )
+        for i, chunk in enumerate(file_chunks)
+    ]
+
+    if do_reset:
+        deleted_count = await chunk_model.delete_chunks_by_project(project.id)
+        logger.info(
+            f"Reset: Deleted {deleted_count} chunks for project_id: {project_id}"
+        )
+
+    no_records = await chunk_model.insert_many_chunks(file_chunks_records)
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
             "message": ResponseSignal.PROCESSING_SUCCESS.value,
-            "num_chunks": len(file_chunks),
+            "inserted_chunks": no_records,
         },
     )
