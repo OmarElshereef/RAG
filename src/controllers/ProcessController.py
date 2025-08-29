@@ -20,6 +20,10 @@ class ProcessController(BaseController):
     def get_file_loader(self, file_id: str):
         file_extension = self.get_file_extension(file_id)
         file_path = os.path.join(self.project_path, file_id)
+
+        if not os.path.exists(file_path):
+            return None
+
         if file_extension == ProcessingEnum.TXT.value:
             return TextLoader(file_path, encoding="utf-8")
 
