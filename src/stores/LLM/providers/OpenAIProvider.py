@@ -24,7 +24,7 @@ class OpenAIProvider(LLMInterface):
         self.embedding_model_id = None
         self.embedding_size = None
 
-        self.client = OpenAI(api_key=self.api_key, api_url=self.api_url)
+        self.client = OpenAI(api_key=self.api_key, base_url=self.api_url)
         self.logger = logging.getLogger(__name__)
 
     def set_generation_model(self, model_id: str):
