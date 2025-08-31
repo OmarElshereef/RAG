@@ -135,6 +135,6 @@ async def search_index(
         status_code=status.HTTP_200_OK,
         content={
             "signal": ResponseSignal.SEARCH_IN_VECTOR_DB_SUCCESS.value,
-            "results": search_results,
+            "results": [result.model_dump() for result in search_results],
         },
     )
