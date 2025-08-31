@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.routers import base, data
+from src.routers import base, data, NLP
 from motor.motor_asyncio import AsyncIOMotorClient
 from src.helpers.config import get_settings, Settings
 from src.stores.LLM.LLMProviderFactory import LLMProviderFactory
@@ -27,6 +27,9 @@ async def startup_span():
 
     # vector db client
     app.vector_db_client = vector_db_provider_factory.create(settings.VECTOR_DB_BACKEND)
+    # print(app.vetcor_db_client)
+    print("Vector DB Client created!" + settings.VECTOR_DB_BACKEND)
+
     app.vector_db_client.connect()
 
 
@@ -42,6 +45,6 @@ app.add_event_handler("shutdown", shutdown_span)
 
 app.include_router(base.base_router)
 app.include_router(data.data_router)
-
+app.include_router(NLP.nlp_router)
 
 # contextual chunking

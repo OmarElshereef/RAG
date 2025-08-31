@@ -18,7 +18,7 @@ class CohereEnums(Enum):
     ASSISTANT = "CHATBOT"
 
     DOCUMENT = "search_document"
-    QUERY = "ssearch_query"
+    QUERY = "search_query"
 
 
 class DocumentTypeEnums(Enum):

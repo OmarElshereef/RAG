@@ -14,7 +14,7 @@ import os
 
 logger = logging.getLogger("uvicorn.error")
 
-data_router = APIRouter(prefix="/api/v1/data", tags=["api_v1", "data"])
+data_router = APIRouter(prefix="/api/v1/data", tags=["data"])
 
 
 @data_router.post("/upload/{project_id}")
