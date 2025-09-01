@@ -18,3 +18,5 @@ class ResponseSignal(Enum):
     GET_INDEX_INFO_SUCCESS = "index information retrieved successfully"
     SEARCH_IN_VECTOR_DB_ERROR = "failed to search in vector database"
     SEARCH_IN_VECTOR_DB_SUCCESS = "search in vector database successful"
+    RAG_ANSWER_GENERATION_ERROR = "failed to generate answer for the query"
+    RAG_ANSWER_GENERATION_SUCCESS = "answer generated successfully"

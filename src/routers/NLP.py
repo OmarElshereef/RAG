@@ -115,6 +115,7 @@ async def search_index(
         vector_db_client=request.app.vector_db_client,
         embedding_client=request.app.embedding_client,
         generation_client=request.app.generation_client,
+        template_parser=request.app.template_parser,
     )
 
     if not project:
@@ -138,5 +139,47 @@ async def search_index(
         content={
             "signal": ResponseSignal.SEARCH_IN_VECTOR_DB_SUCCESS.value,
             "results": [result.model_dump() for result in search_results],
+        },
+    )
+
+
+@nlp_router.post("/index/answer/{project_id}")
+async def generate_rag_answer(
+    request: Request, project_id: str, search_request: SearchRequest
+):
+    project_model = await ProjectModel.create_instance(request.app.db_client)
+
+    project = await project_model.get_project_or_create_one(project_id)
+
+    nlp_controller = NLPController(
+        vector_db_client=request.app.vector_db_client,
+        embedding_client=request.app.embedding_client,
+        generation_client=request.app.generation_client,
+        template_parser=request.app.template_parser,
+    )
+
+    if not project:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"signal": ResponseSignal.PROJECT_NOT_FOUND.value},
+        )
+
+    answer, full_prompt, chat_history = nlp_controller.answer_rag_question(
+        project, search_request.text, limit=search_request.limit
+    )
+
+    if answer is None:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"signal": ResponseSignal.RAG_ANSWER_GENERATION_ERROR.value},
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "signal": ResponseSignal.RAG_ANSWER_GENERATION_SUCCESS.value,
+            "answer": answer,
+            "full_prompt": full_prompt,
+            "chat_history": chat_history,
         },
     )
