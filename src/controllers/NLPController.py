@@ -3,6 +3,7 @@ from src.models.db_schemas import DataChunk, Project
 from src.stores.vectorDB.VectorDBInterface import VectorDBInterface
 from src.stores.LLM.LLMInterface import LLMInterface
 from src.stores.LLM.LLMEnums import DocumentTypeEnums
+from src.stores.LLM.templates.template_parser import TemplateParser
 from typing import List
 import json
 
@@ -13,12 +14,14 @@ class NLPController(BaseController):
         vector_db_client: VectorDBInterface,
         embedding_client: LLMInterface,
         generation_client: LLMInterface,
+        template_parser: TemplateParser,
     ):
         super().__init__()
 
         self.vector_db_client = vector_db_client
         self.embedding_client = embedding_client
         self.generation_client = generation_client
+        self.template_parser = template_parser
 
     def create_collection_name(self, project_id: str) -> str:
         return f"collection_{project_id}".strip()
@@ -78,3 +81,34 @@ class NLPController(BaseController):
             return False
 
         return results
+
+    def generate_rag_question(self, project: Project, query: str, limit: int = 5):
+
+        retrieved_docs = self.search_vector_db_collection(project, query, limit)
+        if not retrieved_docs:
+            return None
+
+        system_prompt = self.template_parser.get("rag", "system_prompt", {})
+
+        """ document_prompt = []
+        for idx, doc in enumerate(retrieved_docs):
+            document_prompt.append(
+                self.template_parser.get(
+                    "rag",
+                    "document_prompt",
+                    {"doc_num": idx + 1, "content": doc.text},
+                )
+            ) """
+
+        document_prompt = "\n".join(
+            [
+                self.template_parser.get(
+                    "rag",
+                    "document_prompt",
+                    {"doc_num": idx + 1, "content": doc.text},
+                )
+                for idx, doc in enumerate(retrieved_docs)
+            ]
+        )
+
+        footer_prompt = self.template_parser.get("rag", "footer_prompt", {})
