@@ -140,7 +140,7 @@ async def process_data(
             file_chunks_records = [
                 DataChunk(
                     text=chunk.page_content,
-                    metadata=chunk.metadata,
+                    meta=chunk.meta,
                     order=i + 1,
                     project_id=project.id,
                     asset_id=asset_id,

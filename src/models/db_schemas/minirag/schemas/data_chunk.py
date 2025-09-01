@@ -15,9 +15,9 @@ class DataChunk(SQL_alchemy_base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
 
-    chunk_text = Column(String, nullable=False)
-    chunk_metadata = Column(JSONB, nullable=False)
-    chunk_order = Column(Integer, nullable=False)
+    text = Column(String, nullable=False)
+    meta = Column(JSONB, nullable=False)
+    order = Column(Integer, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

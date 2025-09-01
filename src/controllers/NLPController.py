@@ -23,15 +23,15 @@ class NLPController(BaseController):
         self.generation_client = generation_client
         self.template_parser = template_parser
 
-    def create_collection_name(self, project_id: str) -> str:
-        return f"collection_{project_id}".strip()
+    def create_collection_name(self, project_id: int) -> str:
+        return f"collection_{str(project_id)}".strip()
 
     def reset_vector_db_collection(self, project: Project):
-        collection_name = self.create_collection_name(str(project.project_id))
+        collection_name = self.create_collection_name(str(project.id))
         return self.vector_db_client.delete_collection(collection_name)
 
     def get_vector_db_collection_info(self, project: Project):
-        collection_name = self.create_collection_name(str(project.project_id))
+        collection_name = self.create_collection_name(str(project.id))
         return self.vector_db_client.get_collection_info(collection_name)
 
     def index_into_vector_db(
@@ -40,10 +40,10 @@ class NLPController(BaseController):
         chunks: List[DataChunk],
         do_reset: bool = False,
     ):
-        collection_name = self.create_collection_name(str(project.project_id))
+        collection_name = self.create_collection_name(str(project.id))
 
         texts = [chunk.text for chunk in chunks]
-        metadatas = [chunk.metadata for chunk in chunks]
+        metadatas = [chunk.meta for chunk in chunks]
         vectors = [
             self.embedding_client.embed_text(text, DocumentTypeEnums.DOCUMENT.value)
             for text in texts
@@ -67,7 +67,7 @@ class NLPController(BaseController):
         return True
 
     def search_vector_db_collection(self, project: Project, text: str, limit: int = 5):
-        collection_name = self.create_collection_name(str(project.project_id))
+        collection_name = self.create_collection_name(str(project.id))
 
         vector = self.embedding_client.embed_text(text, DocumentTypeEnums.QUERY.value)
 
@@ -105,7 +105,10 @@ class NLPController(BaseController):
                 self.template_parser.get(
                     "rag",
                     "document_prompt",
-                    {"doc_num": idx + 1, "content": doc.text},
+                    {
+                        "doc_num": idx + 1,
+                        "content": self.generation_client.process_text(doc.text),
+                    },
                 )
                 for idx, doc in enumerate(retrieved_docs)
             ]

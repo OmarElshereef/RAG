@@ -28,10 +28,10 @@ class ProjectModel(BaseDataModel):
         async with self.db_client() as session:
             async with session.begin():
                 query = select(Project).where(Project.id == project_id)
-
-                project = query.scalar_one_or_none()
+                result = await session.execute(query)
+                project = result.scalar_one_or_none()
                 if not project:
-                    project = self.create_project(Project(id=project_id))
+                    project = await self.create_project(Project(id=project_id))
 
             return project
 
