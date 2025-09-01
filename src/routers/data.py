@@ -20,7 +20,7 @@ data_router = APIRouter(prefix="/api/v1/data", tags=["data"])
 @data_router.post("/upload/{project_id}")
 async def upload_data(
     request: Request,
-    project_id: str,
+    project_id: int,
     file: UploadFile,
     app_settings: Settings = Depends(get_settings),
 ):
@@ -70,7 +70,7 @@ async def upload_data(
 
 @data_router.post("/process/{project_id}")
 async def process_data(
-    request: Request, project_id: str, process_request: ProcessRequest
+    request: Request, project_id: int, process_request: ProcessRequest
 ):
     file_id = process_request.file_id
     chunk_size = process_request.chunk_size
