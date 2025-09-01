@@ -22,7 +22,7 @@ class Asset(SQL_alchemy_base):
         Integer, ForeignKey("projects.id"), nullable=False
     )  # Foreign key to Project.id
 
-    project: Project = relationship("Project", back_populates="assets")
+    project = relationship("Project", back_populates="assets")
 
     __table_args__ = (
         Index("ix_asset_project_id", project_id),
