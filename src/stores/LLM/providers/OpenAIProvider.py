@@ -27,6 +27,8 @@ class OpenAIProvider(LLMInterface):
         self.client = OpenAI(api_key=self.api_key, base_url=self.api_url)
         self.logger = logging.getLogger(__name__)
 
+        self.enums = OpenAIEnums
+
     def set_generation_model(self, model_id: str):
         self.generation_model_id = model_id
 
@@ -58,7 +60,7 @@ class OpenAIProvider(LLMInterface):
             temperature if temperature is not None else self.default_temperature
         )
 
-        chat_history.append(self.construct_prompt(prompt, OpenAIEnums.USER.value))
+        chat_history.append(self.construct_prompt(prompt, self.enums.USER.value))
 
         response = self.client.chat.completions.create(
             model=self.generation_model_id,
