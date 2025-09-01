@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_KEY: str
 
+    POSGRES_USERNAME: str
+    POSGRES_PASSWORD: str
+    POSGRES_HOST: str
+    POSGRES_PORT: int
+    POSGRES_MAIN_DB: str
+
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
     JWT_EXPIRATION_MINUTES: int
