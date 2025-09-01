@@ -1,19 +1,26 @@
 from fastapi import FastAPI
 from src.routers import base, data, NLP
-from motor.motor_asyncio import AsyncIOMotorClient
 from src.helpers.config import get_settings, Settings
 from src.stores.LLM.LLMProviderFactory import LLMProviderFactory
 from src.stores.vectorDB.VectorDBProviderFactory import VectorDBProviderFactory
 from src.stores.LLM.templates.template_parser import TemplateParser
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 app = FastAPI()
 
 
 async def startup_span():
     settings: Settings = get_settings()
-    app.mongo_conn = AsyncIOMotorClient(settings.MONGO_URI)
-    app.db_client = app.mongo_conn[settings.MONGO_DB_NAME]
-    print("Connected to the MongoDB database!")
+
+    postgres_url = f"postgresql+asyncpg://{settings.POSGRES_USERNAME}:{settings.POSGRES_PASSWORD}@{settings.POSGRES_HOST}:{settings.POSGRES_PORT}/{settings.POSGRES_MAIN_DB}"
+
+    app.db_engine = create_async_engine(postgres_url)
+
+    app.db_client = sessionmaker(
+        app.db_engine, class_=AsyncSession, expire_on_commit=False
+    )
+    print("Connected to the PostgreSQL database!")
 
     llm_provider_factory = LLMProviderFactory(settings)
     vector_db_provider_factory = VectorDBProviderFactory(settings)
@@ -39,8 +46,8 @@ async def startup_span():
 
 
 async def shutdown_span():
-    app.mongo_conn.close()
-    print("MongoDB connection closed!")
+    app.db_engine.dispose()
+    print("PostgreSQL connection closed!")
     app.vector_db_client.disconnect()
 
 
