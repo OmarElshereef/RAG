@@ -17,14 +17,20 @@ class PgVectorProvider(VectorDBInterface):
         db_client,
         default_vector_size: int = 384,
         distance_method: str = None,
+        index_threshold: int = 100,
     ):
         self.db_client = db_client
         self.default_vector_size = default_vector_size
         self.distance_method = distance_method
+        self.index_threshold = index_threshold
 
         self.pgvector_table_prefix = PgVecotrTableSchemeEnums._PREFIX.value
 
-        self.logger = logging.getLogger("uvicorn.error")
+        self.logger = logging.getLogger("uvicorn")
+
+        self.default_index_name = (
+            lambda collection_name: f"{collection_name}_vector_idx"
+        )
 
     async def connect(self):
         async with self.db_client() as session:
@@ -135,6 +141,80 @@ class PgVectorProvider(VectorDBInterface):
             return True
         else:
             self.logger.info("Collection %s already exists", collection_name)
+            return False
+
+    async def index_exists(self, collection_name: str) -> bool:
+        index_name = self.default_index_name(collection_name)
+        async with self.db_client() as session:
+            async with session.begin():
+                check_sql = sql_text(
+                    "select 1 from pg_indexes where tablename = :collection_name and indexname = :index_name"
+                )
+
+                result = await session.execute(
+                    check_sql,
+                    {"collection_name": collection_name, "index_name": index_name},
+                )
+
+                record = result.scalar_one_or_none()
+        return record is not None
+
+    async def create_index(
+        self, collection_name: str, index_type: str = PgVectorIndexTypeEnums.HNSW.value
+    ):
+        index_exists = await self.index_exists(collection_name)
+        if index_exists:
+            self.logger.info("Index on collection %s already exists", collection_name)
+            return False
+
+        async with self.db_client() as session:
+            async with session.begin():
+                count_sql = sql_text(f"SELECT COUNT(*) FROM {collection_name}")
+                result = await session.execute(count_sql)
+                record_count = result.scalar_one()
+                if record_count < self.index_threshold:
+                    self.logger.info(
+                        "Collection %s has %d records, below threshold %d, skipping index creation",
+                        collection_name,
+                        record_count,
+                        self.index_threshold,
+                    )
+                    return False
+                self.logger.info(
+                    "Creating index on collection %s with %d records",
+                    collection_name,
+                    record_count,
+                )
+                index_name = self.default_index_name(collection_name)
+
+                create_index_sql = sql_text(
+                    f"CREATE INDEX {index_name} ON {collection_name} "
+                    f"USING {index_type} ({PgVecotrTableSchemeEnums.VECTOR.value} "
+                    f"{self.distance_method}) ;"
+                )
+                await session.execute(create_index_sql)
+            await session.commit()
+            self.logger.info("finish creating index %s", index_name)
+        return True
+
+    async def reset_vector_index(self, collection_name: str):
+
+        async with self.db_client() as session:
+            async with session.begin():
+                index_name = self.default_index_name(collection_name)
+                drop_index_sql = sql_text(f"DROP INDEX IF EXISTS {index_name};")
+                await session.execute(drop_index_sql)
+            await session.commit()
+            self.logger.info("Dropped index %s", index_name)
+
+        created = await self.create_index(collection_name)
+        if created:
+            self.logger.info("Recreated index on collection %s", collection_name)
+            return True
+        else:
+            self.logger.info(
+                "Failed to recreate index on collection %s", collection_name
+            )
             return False
 
     async def insert_one(
