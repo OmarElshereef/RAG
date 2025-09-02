@@ -23,3 +23,9 @@ class PgVecotrTableSchemeEnums(Enum):
     VECTOR = "vector"
     CHUNK_ID = "chunk_id"
     _PREFIX = "pgvector"
+
+
+class PgVectorIndexTypeEnums(Enum):
+    IVFFLAT = "ivfflat"
+    HNSW = "hnsw"
+    BRUTEFORCE = "bruteforce"
