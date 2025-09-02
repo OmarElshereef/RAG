@@ -7,7 +7,7 @@ from src.helpers.config import Settings
 
 class VectorDBProviderFactory:
     def __init__(self, config: dict, db_client: sessionmaker):
-        self.config: Settings = Settings(**config)
+        self.config = config
         self.db_client = db_client
 
     def create(self, provider: str):
@@ -19,14 +19,14 @@ class VectorDBProviderFactory:
                 db_client=qdrant_db_client,
                 distance_method=self.config.VECTOR_DB_DISTANCE_METHOD,
                 default_vector_size=self.config.EMBEDDING_MODEL_SIZE,
-                index_threshold=self.config.VECTOR_DB_PGVEC_INDEX_THRSHOLDD,
+                index_threshold=self.config.VECTOR_DB_PGVEC_INDEX_THRSHOLD,
             )
         elif provider == VectorDBEnums.PGVECTOR.value:
             return PgVectorProvider(
                 db_client=self.db_client,
                 distance_method=self.config.VECTOR_DB_DISTANCE_METHOD,
                 default_vector_size=self.config.EMBEDDING_MODEL_SIZE,
-                index_threshold=self.config.VECTOR_DB_PGVEC_INDEX_THRSHOLDD,
+                index_threshold=self.config.VECTOR_DB_PGVEC_INDEX_THRSHOLD,
             )
 
         return None

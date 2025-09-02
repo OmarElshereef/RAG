@@ -23,7 +23,9 @@ async def startup_span():
     print("Connected to the PostgreSQL database!")
 
     llm_provider_factory = LLMProviderFactory(settings)
-    vector_db_provider_factory = VectorDBProviderFactory(settings)
+    vector_db_provider_factory = VectorDBProviderFactory(
+        settings, db_client=app.db_client
+    )
 
     app.generation_client = llm_provider_factory.create(settings.GENERATION_BACKEND)
     app.generation_client.set_generation_model(settings.GENERATION_MODEL_ID)
@@ -38,7 +40,7 @@ async def startup_span():
     # print(app.vetcor_db_client)
     print("Vector DB Client created!" + settings.VECTOR_DB_BACKEND)
 
-    app.vector_db_client.connect()
+    await app.vector_db_client.connect()
 
     app.template_parser = TemplateParser(
         language=settings.PRIMARY_LANGUAGE, default_language=settings.DEFAULT_LANGUAGE
@@ -46,9 +48,9 @@ async def startup_span():
 
 
 async def shutdown_span():
-    app.db_engine.dispose()
+    await app.db_engine.dispose()
     print("PostgreSQL connection closed!")
-    app.vector_db_client.disconnect()
+    await app.vector_db_client.disconnect()
 
 
 app.add_event_handler("startup", startup_span)

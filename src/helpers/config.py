@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     VECTOR_DB_BACKEND: str = None
     VECTOR_DB_PATH: str = None
     VECTOR_DB_DISTANCE_METHOD: str = None
-    VECTOR_DB_PGVEC_INDEX_THRSHOLDD: int = None
+    VECTOR_DB_PGVEC_INDEX_THRSHOLD: int = None
 
     PRIMARY_LANGUAGE: str = "en"
     DEFAULT_LANGUAGE: str = "en"

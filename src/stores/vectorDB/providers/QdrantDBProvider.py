@@ -18,6 +18,8 @@ class QdrantDBProvider(VectorDBInterface):
 
         self.db_client = db_client
         self.client = None
+        self.default_vector_size = default_vector_size
+        self.index_threshold = index_threshold
 
         if distance_method == DistanceMethodEnums.COSINE.value:
             self.distance_method = models.Distance.COSINE
@@ -76,7 +78,7 @@ class QdrantDBProvider(VectorDBInterface):
         text: str,
         vector: list,
         metadata: dict = None,
-        record_id: str = None,
+        record_id: int = None,
     ):
         if not self.collection_exists(collection_name):
             self.logger.error("Collection %s does not exist", collection_name)
@@ -104,7 +106,7 @@ class QdrantDBProvider(VectorDBInterface):
         texts: List[str],
         vectors: List[list],
         metadatas: List[dict] = None,
-        record_ids: List[str] = None,
+        record_ids: List[int] = None,
         batch_size: int = 50,
     ):
         if not self.collection_exists(collection_name):

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, UploadFile, status, Request
 from fastapi.responses import JSONResponse
 from src.helpers.config import get_settings, Settings
-from src.controllers import DataController, ProcessController
+from src.controllers import DataController, ProcessController, NLPController
 from src.models import ResponseSignal, DataBaseEnums, AssetTypeEnums
 from src.models.ProjectModel import ProjectModel
 from src.models.ChunkModel import ChunkModel
@@ -108,12 +108,22 @@ async def process_data(
         )
 
     process_controller = ProcessController(project_id)
+    nlp_controller = NLPController(
+        vector_db_client=request.app.vector_db_client,
+        embedding_client=request.app.embedding_client,
+        generation_client=request.app.generation_client,
+        template_parser=request.app.template_parser,
+    )
 
     no_records = 0
     processed_files = 0
     failed_files = []
 
     if do_reset:
+        collection_name = nlp_controller.create_collection_name(project.id)
+
+        _ = await request.app.vector_db_client.delete_collection(collection_name)
+
         deleted_count = await chunk_model.delete_chunks_by_project(project.id)
         logger.info(
             f"Reset: Deleted {deleted_count} chunks for project_id: {project_id}"
@@ -140,7 +150,7 @@ async def process_data(
             file_chunks_records = [
                 DataChunk(
                     text=chunk.page_content,
-                    meta=chunk.meta,
+                    meta=chunk.metadata,
                     order=i + 1,
                     project_id=project.id,
                     asset_id=asset_id,

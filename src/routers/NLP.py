@@ -5,7 +5,7 @@ from src.models import ProjectModel, ChunkModel, AssetModel
 from .schemas.NLP import PushRequest, SearchRequest
 from src.models.enums.ResponseEnums import ResponseSignal
 import logging
-
+from tqdm.auto import tqdm
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -38,6 +38,20 @@ async def index_project(request: Request, project_id: int, push_reqeust: PushReq
     page = 1
     inserted_count = 0
 
+    collection_name = nlp_controller.create_collection_name(project.id)
+
+    _ = await request.app.vector_db_client.create_collection(
+        collection_name,
+        request.app.embedding_client.embedding_size,
+        push_reqeust.do_reset,
+    )
+
+    chunks_count = await chunk_model.get_total_chunks_count(project.id)
+
+    progress_bar = tqdm(
+        total=chunks_count, desc="Indexing Chunks", position=0, unit="chunk"
+    )
+
     while has_records:
         chunks = await chunk_model.get_chunks_by_project(project.id, page=page)
         if len(chunks):
@@ -47,9 +61,7 @@ async def index_project(request: Request, project_id: int, push_reqeust: PushReq
             has_records = False
             break
 
-        is_inserted = nlp_controller.index_into_vector_db(
-            project, chunks, do_reset=push_reqeust.do_reset
-        )
+        is_inserted = await nlp_controller.index_into_vector_db(project, chunks)
 
         if not is_inserted:
             return JSONResponse(
@@ -57,6 +69,7 @@ async def index_project(request: Request, project_id: int, push_reqeust: PushReq
                 content={"signal": ResponseSignal.INSERT_INTO_VECTOR_DB_ERROR.value},
             )
         inserted_count += len(chunks)
+        progress_bar.update(len(chunks))
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -86,7 +99,7 @@ async def get_project_index_info(request: Request, project_id: int):
         template_parser=request.app.template_parser,
     )
 
-    index_info = nlp_controller.get_vector_db_collection_info(project)
+    index_info = await nlp_controller.get_vector_db_collection_info(project)
 
     if index_info is None:
         return JSONResponse(
@@ -124,7 +137,7 @@ async def search_index(
             content={"signal": ResponseSignal.PROJECT_NOT_FOUND.value},
         )
 
-    search_results = nlp_controller.search_vector_db_collection(
+    search_results = await nlp_controller.search_vector_db_collection(
         project, search_request.text, limit=search_request.limit
     )
 
@@ -164,7 +177,7 @@ async def generate_rag_answer(
             content={"signal": ResponseSignal.PROJECT_NOT_FOUND.value},
         )
 
-    answer, full_prompt, chat_history = nlp_controller.answer_rag_question(
+    answer, full_prompt, chat_history = await nlp_controller.answer_rag_question(
         project, search_request.text, limit=search_request.limit
     )
 
