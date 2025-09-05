@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List, Union
 
 
 class LLMInterface(ABC):
@@ -22,7 +23,7 @@ class LLMInterface(ABC):
         pass
 
     @abstractmethod
-    def embed_text(self, text: str, document_type: str):
+    def embed_text(self, text: Union[List[str], str], document_type: str):
         pass
 
     @abstractmethod

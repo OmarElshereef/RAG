@@ -42,7 +42,7 @@ class VectorDBInterface(ABC):
         text: str,
         vector: list,
         metadata: dict = None,
-        record_id: str = None,
+        record_id: int = None,
     ):
         pass
 
@@ -53,7 +53,7 @@ class VectorDBInterface(ABC):
         texts: List[str],
         vectors: List[list],
         metadatas: List[dict] = None,
-        record_ids: List[str] = None,
+        record_ids: List[int] = None,
         batch_size: int = 50,
     ):
         pass

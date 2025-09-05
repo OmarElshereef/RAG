@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_KEY: str
 
+    POSGRES_USERNAME: str
+    POSGRES_PASSWORD: str
+    POSGRES_HOST: str
+    POSGRES_PORT: int
+    POSGRES_MAIN_DB: str
+
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
     JWT_EXPIRATION_MINUTES: int
@@ -37,6 +43,7 @@ class Settings(BaseSettings):
     VECTOR_DB_BACKEND: str = None
     VECTOR_DB_PATH: str = None
     VECTOR_DB_DISTANCE_METHOD: str = None
+    VECTOR_DB_PGVEC_INDEX_THRSHOLD: int = None
 
     PRIMARY_LANGUAGE: str = "en"
     DEFAULT_LANGUAGE: str = "en"

@@ -3,13 +3,20 @@ from .ProjectController import ProjectController
 from src.models import ProcessingEnum
 from langchain_community.document_loaders import TextLoader
 from langchain_community.document_loaders import PyMuPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
+from typing import List
 import os
+
+from dataclasses import dataclass
+
+
+@dataclass
+class Document:
+    page_content: str
+    metadata: dict
 
 
 class ProcessController(BaseController):
-    def __init__(self, project_id: str):
+    def __init__(self, project_id: int):
         super().__init__()
         self.project_id = project_id
         self.project_path = ProjectController().get_project_path(self.project_id)
@@ -48,16 +55,45 @@ class ProcessController(BaseController):
         chunk_size: int = 100,
         overlap_size: int = 20,
     ):
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size, chunk_overlap=overlap_size, length_function=len
-        )
 
         file_content_texts = [rec.page_content for rec in file_content]
 
         file_content_metadata = [rec.metadata for rec in file_content]
 
-        chunks = text_splitter.create_documents(
+        """ chunks = text_splitter.create_documents(
             file_content_texts, metadatas=file_content_metadata
+        ) """
+
+        chunks = self.process_simpler_splitter(
+            file_content_texts, file_content_metadata, chunk_size
         )
+
+        return chunks
+
+    def process_simpler_splitter(
+        self,
+        texts: List[str],
+        metadatas: List[dict],
+        chunk_size: int,
+        splitter_tag: str = "\n",
+    ):
+        full_text = " ".join(texts)
+
+        lines = [
+            doc.strip() for doc in full_text.split(splitter_tag) if doc.strip() != ""
+        ]
+
+        chunks = []
+        current_chunk = ""
+
+        for line in lines:
+            current_chunk += lines + splitter_tag
+            if len(current_chunk) >= chunk_size:
+                chunks.append(Document(page_content=current_chunk.strip(), metadata={}))
+                current_chunk = ""
+
+        if len(current_chunk) > 0:
+            chunks.append(Document(page_content=current_chunk.strip(), metadata={}))
+            current_chunk = ""
 
         return chunks
