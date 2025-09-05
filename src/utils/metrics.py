@@ -1,6 +1,6 @@
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from fastapi import APIRouter, Request, Response, FastAPI
-from starlette_exporter import BaseHttpMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import time
 
 
@@ -13,7 +13,7 @@ REQUEST_LATENCY = Histogram(
 )
 
 
-class PrometheusMiddleware(BaseHttpMiddleware):
+class PrometheusMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
         response = await call_next(request)
